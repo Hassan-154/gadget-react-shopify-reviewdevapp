@@ -31,12 +31,14 @@ function reviewsTable() {
   
   const [currentPage, setCurrentPage] = useState(1);
   
-  const [{ data: reviewListData, fetching: findFetching, error: findError, pageInfo }, _refetch] = useFindMany(api.reviewList, {
-      live: true,
-      first: pageSize,
-      ...(afterCursor ? { first: pageSize, after: afterCursor } : {}),
-      ...(beforeCursor ? { last: pageSize, before: beforeCursor } : {}),
-  });
+  const [searchTableData, setSearchTableData] = useState('');
+    const [{ data: reviewListData, fetching: findFetching, error: findError, pageInfo }, _refetch] = useFindMany(api.reviewList, {
+        live: true,
+        first: pageSize,
+        ...(afterCursor ? { after: afterCursor } : {}),
+        ...(beforeCursor ? { before: beforeCursor, last: pageSize } : {}),
+        ...(searchTableData ? { filter: { OR: [{ customerName: { startsWith: searchTableData } }, { reviewTitle: { startsWith: searchTableData } }] } } : {}), // Live filter based on customerName and reviewTitle
+    });
 
   useEffect(() => {
     if (reviewListData) {
@@ -203,10 +205,11 @@ const handlePreviousPage = () => {
     (value) => setTaggedWith(value),
     []
   );
-  const handleQueryValueChange = useCallback(
-    (value) => setQueryValue(value),
-    []
-  );
+  const handleQueryValueChange = useCallback((value) => {
+    setQueryValue(value);
+    setSearchTableData(value);
+  }, []);
+  
   const handleAccountStatusRemove = useCallback(() => setAccountStatus([]), []);
   const handleMoneySpentRemove = useCallback(
     () => setMoneySpent(undefined),
