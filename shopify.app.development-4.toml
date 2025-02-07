@@ -1,0 +1,18 @@
+# Learn more about working with Shopify TOML files with Gadget at https://docs.gadget.dev/guides/plugins/shopify/shopify-app-toml
+
+client_id = "834c7d0a6f6d61d4a1b818fd8096a8ab"
+name = "reviewdevapp"
+application_url = "https://reviewdevapp--development.gadget.app/api/shopify/install-or-render"
+embedded = true
+
+[build]
+# Gadget manages all your scopes, webhooks and api versioning for your app
+# As such, this line should not be changed unless you are working with
+# Shopify managed installations. Read more at https://docs.gadget.dev/guides/plugins/shopify/shopify-app-toml
+include_config_on_deploy = false
+
+[auth]
+redirect_urls = ["https://reviewdevapp--development.gadget.app/api/connections/auth/shopify/callback"]
+
+[webhooks]
+api_version = "2024-10"
