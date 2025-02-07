@@ -27,17 +27,18 @@ function reviewsTable() {
   const [beforeCursor, setBeforeCursor] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [pageInfoData, setPageInfoData] = useState(null)
-  const pageSize = 3;
+  const pageSize = 20;
   
   const [currentPage, setCurrentPage] = useState(1);
   
   const [searchTableData, setSearchTableData] = useState('');
     const [{ data: reviewListData, fetching: findFetching, error: findError, pageInfo }, _refetch] = useFindMany(api.reviewList, {
         live: true,
+        ...(searchTableData ? { search: searchTableData } : {}),
         first: pageSize,
         ...(afterCursor ? { after: afterCursor } : {}),
         ...(beforeCursor ? { before: beforeCursor, last: pageSize } : {}),
-        ...(searchTableData ? { filter: { OR: [{ customerName: { startsWith: searchTableData } }, { reviewTitle: { startsWith: searchTableData } }] } } : {}), // Live filter based on customerName and reviewTitle
+        // ...(searchTableData ? { filter: { OR: [{ customerName: { startsWith: searchTableData, mode="" } }, { reviewTitle: { startsWith: searchTableData } }] } } : {}),
     });
 
   useEffect(() => {
@@ -46,11 +47,7 @@ function reviewsTable() {
       setReviews(reviewListData);
     }
   }, [reviewListData, afterCursor, beforeCursor]);
-  console.log("Review Data ...", reviews)
-  console.log("afterCursor Data ...", afterCursor)
-  console.log("beforeCursor Data ...", beforeCursor)
 
-  
   // Also add a console log for fetching state
   useEffect(() => {
     if (reviewListData?.pagination) {
@@ -320,7 +317,7 @@ const handlePreviousPage = () => {
           </Text>
         </IndexTable.Cell>
         <IndexTable.Cell>{date}</IndexTable.Cell>
-        <IndexTable.Cell><IndexTable.Cell>{customerName.slice(0, 6)}...</IndexTable.Cell></IndexTable.Cell>
+        <IndexTable.Cell><IndexTable.Cell>{customerName}</IndexTable.Cell></IndexTable.Cell>
         <IndexTable.Cell>{customerEmail.slice(0, 8)}...</IndexTable.Cell>
         <IndexTable.Cell>
           { publishStatus ? <Badge progress="complete">Publish</Badge> : <Badge progress="incomplete">Unpublish</Badge>}
@@ -347,9 +344,11 @@ const handlePreviousPage = () => {
         <Button variant="primary">Create New Customization</Button>
       }
     >
-      <pre>{JSON.stringify(reviewListData, null, 2)}</pre>
+      {/* <pre>{JSON.stringify(reviewListData, null, 2)}</pre> */}
+      {searchTableData}
       <Card>
         <IndexFilters
+          loading={findFetching}
           sortOptions={sortOptions}
           sortSelected={sortSelected}
           queryValue={queryValue}
