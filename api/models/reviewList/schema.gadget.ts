@@ -39,8 +39,9 @@ export const schema: GadgetModel = {
     },
     reviewDescription: {
       type: "string",
+      default: "",
       validations: { required: true },
-      storageKey: "Hqm7KSoUphdF",
+      storageKey: "NhqOTv7ULAbF",
     },
     reviewFiles: {
       type: "hasMany",
