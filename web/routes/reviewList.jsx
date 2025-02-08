@@ -1,13 +1,10 @@
 import {
-  TextField,
   IndexTable,
   Card,
   IndexFilters,
   useSetIndexFiltersMode,
   useIndexResourceState,
   Text,
-  ChoiceList,
-  RangeSlider,
   Badge,
   IndexFiltersMode,
   useBreakpoints,
@@ -18,7 +15,7 @@ import {
 } from "@shopify/polaris";
 import { useState, useCallback,useEffect } from "react";
 import { EditIcon, DeleteIcon } from "@shopify/polaris-icons";
-import { useAction, useFindMany } from "@gadgetinc/react";
+import { useFindMany } from "@gadgetinc/react";
 import { api } from "../api";
 
 function reviewsTable() {
@@ -180,23 +177,9 @@ const handlePreviousPage = () => {
           disabled: false,
           loading: false,
         };
-  const [accountStatus, setAccountStatus] = useState([]);
-  const [moneySpent, setMoneySpent] = useState(undefined);
-  const [taggedWith, setTaggedWith] = useState("");
+
   const [queryValue, setQueryValue] = useState(undefined);
 
-  const handleAccountStatusChange = useCallback(
-    (value) => setAccountStatus(value),
-    []
-  );
-  const handleMoneySpentChange = useCallback(
-    (value) => setMoneySpent(value),
-    []
-  );
-  const handleTaggedWithChange = useCallback(
-    (value) => setTaggedWith(value),
-    []
-  );
   const handleQueryValueChange = useCallback((value) => {
     setQueryValue(value);
     setSearchTableData(value);
@@ -206,12 +189,6 @@ const handlePreviousPage = () => {
     setCurrentPage(1);
 }, []);
   
-  const handleAccountStatusRemove = useCallback(() => setAccountStatus([]), []);
-  const handleMoneySpentRemove = useCallback(
-    () => setMoneySpent(undefined),
-    []
-  );
-  const handleTaggedWithRemove = useCallback(() => setTaggedWith(""), []);
   const handleQueryValueRemove = useCallback(() => {
     setQueryValue("");
     setSearchTableData("");
@@ -222,83 +199,11 @@ const handlePreviousPage = () => {
 }, []);
 
   const handleFiltersClearAll = useCallback(() => {
-    handleAccountStatusRemove();
-    handleMoneySpentRemove();
-    handleTaggedWithRemove();
     handleQueryValueRemove();
   }, [
     handleQueryValueRemove,
-    handleTaggedWithRemove,
-    handleMoneySpentRemove,
-    handleAccountStatusRemove,
-  ]);
-
-  const filters = [
-    {
-      key: "accountStatus",
-      label: "Account status",
-      filter: (
-        <ChoiceList
-          title="Account status"
-          titleHidden
-          choices={[
-            { label: "Enabled", value: "enabled" },
-            { label: "Not invited", value: "not invited" },
-            { label: "Invited", value: "invited" },
-            { label: "Declined", value: "declined" },
-          ]}
-          selected={accountStatus || []}
-          onChange={handleAccountStatusChange}
-          allowMultiple
-        />
-      ),
-      shortcut: true,
-    },
-    {
-      key: "taggedWith",
-      label: "Tagged with",
-      filter: (
-        <TextField
-          label="Tagged with"
-          value={taggedWith}
-          onChange={handleTaggedWithChange}
-          autoComplete="off"
-          labelHidden
-        />
-      ),
-      shortcut: true,
-    },
-    {
-      key: "moneySpent",
-      label: "Money spent",
-      filter: (
-        <RangeSlider
-          label="Money spent is between"
-          labelHidden
-          value={moneySpent || [0, 500]}
-          prefix="$"
-          output
-          min={0}
-          max={2000}
-          step={1}
-          onChange={handleMoneySpentChange}
-        />
-      ),
-    },
-  ];
-
-  const appliedFilters =
-    taggedWith && !isEmpty(taggedWith)
-      ? [
-          {
-            key: "taggedWith",
-            label: disambiguateLabel("taggedWith", taggedWith),
-            onRemove: handleTaggedWithRemove,
-          },
-        ]
-      : [];
+  ]); 
       
-
   const resourceName = {
     singular: "order",
     plural: "orders",
@@ -388,8 +293,8 @@ const handlePreviousPage = () => {
           onSelect={setSelected}
           canCreateNewView
           onCreateNewView={onCreateNewView}
-          filters={filters}
-          appliedFilters={appliedFilters}
+          filters={[]}
+          appliedFilters={[]}
           onClearAll={handleFiltersClearAll}
           mode={mode}
           setMode={setMode}
@@ -424,27 +329,6 @@ const handlePreviousPage = () => {
       </Card>
     </Page>
   );
-
-  function disambiguateLabel(key, value) {
-    switch (key) {
-      case "moneySpent":
-        return `Money spent is between $${value[0]} and $${value[1]}`;
-      case "taggedWith":
-        return `Tagged with ${value}`;
-      case "accountStatus":
-        return value.map((val) => `Customer ${val}`).join(", ");
-      default:
-        return value;
-    }
-  }
-
-  function isEmpty(value) {
-    if (Array.isArray(value)) {
-      return value.length === 0;
-    } else {
-      return value === "" || value == null;
-    }
-  }
 }
 
 export default reviewsTable;
