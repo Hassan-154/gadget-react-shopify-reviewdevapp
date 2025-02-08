@@ -73,82 +73,6 @@ const handlePreviousPage = () => {
 }
 };
   
-  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-  const [itemStrings, setItemStrings] = useState([
-    "All",
-    "Unpaid",
-    "Open",
-    "Closed",
-    "Local delivery",
-    "Local pickup",
-  ]);
-  const deleteView = (index) => {
-    const newItemStrings = [...itemStrings];
-    newItemStrings.splice(index, 1);
-    setItemStrings(newItemStrings);
-    setSelected(0);
-  };
-
-  const duplicateView = async (name) => {
-    setItemStrings([...itemStrings, name]);
-    setSelected(itemStrings.length);
-    await sleep(1);
-    return true;
-  };
-
-  const tabs = itemStrings.map((item, index) => ({
-    content: item,
-    index,
-    onAction: () => {},
-    id: `${item}-${index}`,
-    isLocked: index === 0,
-    actions:
-      index === 0
-        ? []
-        : [
-            {
-              type: "rename",
-              onAction: () => {},
-              onPrimaryAction: async (value) => {
-                const newItemsStrings = tabs.map((item, idx) => {
-                  if (idx === index) {
-                    return value;
-                  }
-                  return item.content;
-                });
-                await sleep(1);
-                setItemStrings(newItemsStrings);
-                return true;
-              },
-            },
-            {
-              type: "duplicate",
-              onPrimaryAction: async (value) => {
-                await sleep(1);
-                duplicateView(value);
-                return true;
-              },
-            },
-            {
-              type: "edit",
-            },
-            {
-              type: "delete",
-              onPrimaryAction: async () => {
-                await sleep(1);
-                deleteView(index);
-                return true;
-              },
-            },
-          ],
-  }));
-  const [selected, setSelected] = useState(0);
-  const onCreateNewView = async (value) => {
-    await sleep(500);
-    setItemStrings([...itemStrings, value]);
-    setSelected(itemStrings.length);
-    return true;
-  };
   const sortOptions = [
     { label: "Customer Name", value: "customerName asc", directionLabel: "A-Z" },
     { label: "Customer Name", value: "customerName desc", directionLabel: "Z-A" },
@@ -156,27 +80,6 @@ const handlePreviousPage = () => {
     { label: "Date", value: "createdAt desc", directionLabel: "Descending" },
   ];
   const { mode, setMode } = useSetIndexFiltersMode(IndexFiltersMode.Filtering);
-  const onHandleCancel = () => {};
-
-  const onHandleSave = async () => {
-    await sleep(1);
-    return true;
-  };
-
-  const primaryAction =
-    selected === 0
-      ? {
-          type: "save-as",
-          onAction: onCreateNewView,
-          disabled: false,
-          loading: false,
-        }
-      : {
-          type: "save",
-          onAction: onHandleSave,
-          disabled: false,
-          loading: false,
-        };
 
   const [queryValue, setQueryValue] = useState(undefined);
 
@@ -282,17 +185,11 @@ const handlePreviousPage = () => {
           onQueryChange={handleQueryValueChange}
           onQueryClear={() => setQueryValue("")}
           onSort={setSortSelected}
-          primaryAction={primaryAction}
-          cancelAction={{
-            onAction: onHandleCancel,
-            disabled: false,
-            loading: false,
-          }}
-          tabs={tabs}
-          selected={selected}
-          onSelect={setSelected}
+          tabs={[]}
+          selected={[]}
+          onSelect={[]}
           canCreateNewView
-          onCreateNewView={onCreateNewView}
+          onCreateNewView={[]}
           filters={[]}
           appliedFilters={[]}
           onClearAll={handleFiltersClearAll}
