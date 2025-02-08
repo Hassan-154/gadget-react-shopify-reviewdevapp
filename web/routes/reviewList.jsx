@@ -38,7 +38,7 @@ function reviewsTable() {
         first: pageSize,
         ...(afterCursor ? { after: afterCursor } : {}),
         ...(beforeCursor ? { before: beforeCursor, last: pageSize } : {}),
-        // ...(searchTableData ? { filter: { OR: [{ customerName: { startsWith: searchTableData, mode="" } }, { reviewTitle: { startsWith: searchTableData } }] } } : {}),
+        // ...(searchTableData ? { filter: { OR: [{ customerName: { startsWith: searchTableData } }, { reviewTitle: { startsWith: searchTableData } }] } } : {}),
     });
 
   useEffect(() => {
@@ -345,7 +345,6 @@ const handlePreviousPage = () => {
       }
     >
       {/* <pre>{JSON.stringify(reviewListData, null, 2)}</pre> */}
-      {searchTableData}
       <Card>
         <IndexFilters
           loading={findFetching}
