@@ -27,19 +27,22 @@ function reviewsTable() {
   const [beforeCursor, setBeforeCursor] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [pageInfoData, setPageInfoData] = useState(null)
-  const pageSize = 20;
+  const pageSize = 5;
   
   const [currentPage, setCurrentPage] = useState(1);
-  
+
+  const [sortSelected, setSortSelected] = useState(["customerName asc"]);
+  const [fieldDB, sortOrder] = sortSelected[0].split(" ");
   const [searchTableData, setSearchTableData] = useState('');
-    const [{ data: reviewListData, fetching: findFetching, error: findError, pageInfo }, _refetch] = useFindMany(api.reviewList, {
-        live: true,
-        ...(searchTableData ? { search: searchTableData } : {}),
-        first: pageSize,
-        ...(afterCursor ? { after: afterCursor } : {}),
-        ...(beforeCursor ? { before: beforeCursor, last: pageSize } : {}),
-        // ...(searchTableData ? { filter: { OR: [{ customerName: { startsWith: searchTableData } }, { reviewTitle: { startsWith: searchTableData } }] } } : {}),
-    });
+  const [{ data: reviewListData, fetching: findFetching, error: findError, pageInfo }, _refetch] = useFindMany(api.reviewList, {
+    live: true,
+    ...(searchTableData ? { search: searchTableData } : {}),
+    first: pageSize,
+    ...(afterCursor ? { after: afterCursor } : {}),
+    ...(beforeCursor ? { before: beforeCursor, last: pageSize } : {}),
+    sort: {[fieldDB]: sortOrder === 'asc' ? "Ascending" : "Descending"},
+});
+  
 
   useEffect(() => {
     if (reviewListData) {
@@ -51,14 +54,11 @@ function reviewsTable() {
   // Also add a console log for fetching state
   useEffect(() => {
     if (reviewListData?.pagination) {
-        setReviews(reviewListData.pagination.edges.map((edge) => edge.node));
+        const newReviews = reviewListData.pagination.edges.map((edge) => edge.node);
+        setReviews(newReviews);
         setPageInfoData(reviewListData.pagination.pageInfo);
-    } else {
-        console.error("No pagination info or data available");
     }
 }, [reviewListData]);
-console.log("pageinfoData ...", pageInfoData)
-
   
 const handleNextPage = () => {
   if (pageInfoData?.hasNextPage) {
@@ -153,16 +153,11 @@ const handlePreviousPage = () => {
     return true;
   };
   const sortOptions = [
-    { label: "Order", value: "order asc", directionLabel: "Ascending" },
-    { label: "Order", value: "order desc", directionLabel: "Descending" },
-    { label: "Customer", value: "customer asc", directionLabel: "A-Z" },
-    { label: "Customer", value: "customer desc", directionLabel: "Z-A" },
-    { label: "Date", value: "date asc", directionLabel: "A-Z" },
-    { label: "Date", value: "date desc", directionLabel: "Z-A" },
-    { label: "Total", value: "total asc", directionLabel: "Ascending" },
-    { label: "Total", value: "total desc", directionLabel: "Descending" },
+    { label: "Customer Name", value: "customerName asc", directionLabel: "A-Z" },
+    { label: "Customer Name", value: "customerName desc", directionLabel: "Z-A" },
+    { label: "Date", value: "createdAt asc", directionLabel: "Ascending" },
+    { label: "Date", value: "createdAt desc", directionLabel: "Descending" },
   ];
-  const [sortSelected, setSortSelected] = useState(["order asc"]);
   const { mode, setMode } = useSetIndexFiltersMode(IndexFiltersMode.Filtering);
   const onHandleCancel = () => {};
 
@@ -205,7 +200,11 @@ const handlePreviousPage = () => {
   const handleQueryValueChange = useCallback((value) => {
     setQueryValue(value);
     setSearchTableData(value);
-  }, []);
+    // Reset pagination state when search changes
+    setAfterCursor(null);
+    setBeforeCursor(null);
+    setCurrentPage(1);
+}, []);
   
   const handleAccountStatusRemove = useCallback(() => setAccountStatus([]), []);
   const handleMoneySpentRemove = useCallback(
@@ -213,7 +212,15 @@ const handlePreviousPage = () => {
     []
   );
   const handleTaggedWithRemove = useCallback(() => setTaggedWith(""), []);
-  const handleQueryValueRemove = useCallback(() => setQueryValue(""), []);
+  const handleQueryValueRemove = useCallback(() => {
+    setQueryValue("");
+    setSearchTableData("");
+    // Reset pagination when search is cleared
+    setAfterCursor(null);
+    setBeforeCursor(null);
+    setCurrentPage(1);
+}, []);
+
   const handleFiltersClearAll = useCallback(() => {
     handleAccountStatusRemove();
     handleMoneySpentRemove();
@@ -302,7 +309,7 @@ const handlePreviousPage = () => {
 
   const rowMarkup = reviews?.map(
     (
-      { id, reviewTitle, date, customerName, customerEmail, publishStatus, fulfillmentStatus },
+      { id, reviewTitle, productId, createdAt, customerName, customerEmail, publishStatus, fulfillmentStatus },
       index
     ) => (
       <IndexTable.Row
@@ -313,12 +320,27 @@ const handlePreviousPage = () => {
       >
         <IndexTable.Cell>
           <Text variant="bodyMd" fontWeight="bold" as="span">
+          {id}
+          </Text>
+        </IndexTable.Cell>
+        <IndexTable.Cell>
+          <Text variant="bodyMd" fontWeight="bold" as="span">
           {reviewTitle.slice(0, 8)}...
           </Text>
         </IndexTable.Cell>
-        <IndexTable.Cell>{date}</IndexTable.Cell>
+        <IndexTable.Cell>{new Date(createdAt).toLocaleDateString("en-US", {
+         year: "numeric",
+         month: "long",
+         day: "numeric"
+         })}
+         </IndexTable.Cell>
+          <IndexTable.Cell>
+          <Text variant="bodyMd" fontWeight="bold" as="span">
+          {productId}
+          </Text>
+        </IndexTable.Cell>
         <IndexTable.Cell><IndexTable.Cell>{customerName}</IndexTable.Cell></IndexTable.Cell>
-        <IndexTable.Cell>{customerEmail.slice(0, 8)}...</IndexTable.Cell>
+        <IndexTable.Cell>{customerEmail.slice(0, 16)}...</IndexTable.Cell>
         <IndexTable.Cell>
           { publishStatus ? <Badge progress="complete">Publish</Badge> : <Badge progress="incomplete">Unpublish</Badge>}
           </IndexTable.Cell>
@@ -381,8 +403,10 @@ const handlePreviousPage = () => {
           }
           onSelectionChange={handleSelectionChange}
           headings={[
+            { title: "Review Id" },
             { title: "Review Title" },
             { title: "Date" },
+            { title: "Product Id" },
             { title: "Customer Name" },
             { title: "Customer Email" },
             { title: "Status" },
