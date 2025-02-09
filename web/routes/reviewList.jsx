@@ -39,7 +39,20 @@ function reviewsTable() {
     ...(beforeCursor ? { before: beforeCursor, last: pageSize } : {}),
     sort: {[fieldDB]: sortOrder === 'asc' ? "Ascending" : "Descending"},
 });
-  
+
+const deleteReviews = async (idsToDelete) => {
+  try {
+    for (const id of idsToDelete) {
+      await api.reviewList.delete(id);
+    }
+    console.log("Reviews deleted successfully:", idsToDelete);
+    handleSelectionChange([])
+    selectedResources = []
+    _refetch();
+  } catch (error) {
+    console.error("Error deleting reviews:", error);
+  }
+};
 
   useEffect(() => {
     if (reviewListData) {
@@ -48,7 +61,6 @@ function reviewsTable() {
     }
   }, [reviewListData, afterCursor, beforeCursor]);
 
-  // Also add a console log for fetching state
   useEffect(() => {
     if (reviewListData?.pagination) {
         const newReviews = reviewListData.pagination.edges.map((edge) => edge.node);
@@ -72,7 +84,7 @@ const handlePreviousPage = () => {
     setCurrentPage((prev) => Math.max(prev - 1, 1));
 }
 };
-  
+
   const sortOptions = [
     { label: "Customer Name", value: "customerName asc", directionLabel: "A-Z" },
     { label: "Customer Name", value: "customerName desc", directionLabel: "Z-A" },
@@ -86,7 +98,6 @@ const handlePreviousPage = () => {
   const handleQueryValueChange = useCallback((value) => {
     setQueryValue(value);
     setSearchTableData(value);
-    // Reset pagination state when search changes
     setAfterCursor(null);
     setBeforeCursor(null);
     setCurrentPage(1);
@@ -95,7 +106,6 @@ const handlePreviousPage = () => {
   const handleQueryValueRemove = useCallback(() => {
     setQueryValue("");
     setSearchTableData("");
-    // Reset pagination when search is cleared
     setAfterCursor(null);
     setBeforeCursor(null);
     setCurrentPage(1);
@@ -114,6 +124,9 @@ const handlePreviousPage = () => {
 
   const { selectedResources, allResourcesSelected, handleSelectionChange } =
     useIndexResourceState(reviews);
+    console.log("selectedResources:", selectedResources);
+    console.log("allResourcesSelected:", allResourcesSelected);
+    console.log("handleSelectionChange:", handleSelectionChange);
 
   const rowMarkup = reviews?.map(
     (
@@ -168,11 +181,35 @@ const handlePreviousPage = () => {
 
   return (
     <Page
-      backAction={{ content: "Settings", url: "/dashboard" }}
+      backAction={{content: 'Products', url: '#'}}
       title="Review List"
-      primaryAction={
-        <Button variant="primary">Create New Customization</Button>
-      }
+      compactTitle
+      primaryAction={{content: 'Create New Customization', disabled: false, variant: "primary"}}
+      secondaryActions={[
+        {
+          disabled: selectedResources.length === 0,
+          content: 'Delete All Selected Records',
+          onAction: () => deleteReviews(selectedResources),
+        },
+      ]}
+      actionGroups={[
+        {
+          title: 'Change Publish Status',
+          disabled: selectedResources.length === 0,
+          actions: [
+            {
+              content: 'Publish',
+              accessibilityLabel: 'Individual action label',
+              onAction: () => alert('Share on Facebook action'),
+            },
+            {
+              content: 'Unpublish',
+              accessibilityLabel: 'Individual action label',
+              onAction: () => alert('Share on Facebook action'),
+            },
+          ],
+        },
+      ]}
     >
       {/* <pre>{JSON.stringify(reviewListData, null, 2)}</pre> */}
       <Card>
@@ -203,7 +240,7 @@ const handlePreviousPage = () => {
           selectedItemsCount={
             allResourcesSelected ? "All" : selectedResources.length
           }
-          onSelectionChange={handleSelectionChange}
+          onSelectionChange=''
           headings={[
             { title: "Review Id" },
             { title: "Review Title" },

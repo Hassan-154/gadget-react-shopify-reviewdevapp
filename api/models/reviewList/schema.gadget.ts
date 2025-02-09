@@ -67,7 +67,7 @@ export const schema: GadgetModel = {
       validations: { required: true },
       storageKey: "9V7Z2RAOdy2d",
     },
-    storeURL: {
+    store: {
       type: "string",
       validations: { required: true },
       storageKey: "wq2KZyMqzZnB",
