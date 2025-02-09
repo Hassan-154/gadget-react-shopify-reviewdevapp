@@ -31,6 +31,9 @@ function reviewsTable() {
   const [sortSelected, setSortSelected] = useState(["customerName asc"]);
   const [fieldDB, sortOrder] = sortSelected[0].split(" ");
   const [searchTableData, setSearchTableData] = useState('');
+  const [selectedTableRows, setSelectedTableRows] = useState([]);
+  const { selectedResources, allResourcesSelected, handleSelectionChange } =
+  useIndexResourceState(reviews);
   const [{ data: reviewListData, fetching: findFetching, error: findError, pageInfo }, _refetch] = useFindMany(api.reviewList, {
     live: true,
     ...(searchTableData ? { search: searchTableData } : {}),
@@ -46,8 +49,8 @@ const deleteReviews = async (idsToDelete) => {
       await api.reviewList.delete(id);
     }
     console.log("Reviews deleted successfully:", idsToDelete);
-    handleSelectionChange([])
-    selectedResources = []
+    handleSelectionChange('all', false)
+    setSelectedTableRows([])
     _refetch();
   } catch (error) {
     console.error("Error deleting reviews:", error);
@@ -59,8 +62,13 @@ const deleteReviews = async (idsToDelete) => {
       console.log("New data received:", reviewListData);
       setReviews(reviewListData);
     }
-  }, [reviewListData, afterCursor, beforeCursor]);
+    const filteredSelectedResources = selectedResources.filter(id => reviews.some(review => review.id === id));
+    setSelectedTableRows(filteredSelectedResources);
+    console.log("select table rows:", selectedTableRows);
+  }, [reviewListData, afterCursor, beforeCursor, selectedResources]);
 
+
+  // Also add a console log for fetching state
   useEffect(() => {
     if (reviewListData?.pagination) {
         const newReviews = reviewListData.pagination.edges.map((edge) => edge.node);
@@ -98,6 +106,7 @@ const handlePreviousPage = () => {
   const handleQueryValueChange = useCallback((value) => {
     setQueryValue(value);
     setSearchTableData(value);
+    // Reset pagination state when search changes
     setAfterCursor(null);
     setBeforeCursor(null);
     setCurrentPage(1);
@@ -106,6 +115,7 @@ const handlePreviousPage = () => {
   const handleQueryValueRemove = useCallback(() => {
     setQueryValue("");
     setSearchTableData("");
+    // Reset pagination when search is cleared
     setAfterCursor(null);
     setBeforeCursor(null);
     setCurrentPage(1);
@@ -121,12 +131,6 @@ const handlePreviousPage = () => {
     singular: "order",
     plural: "orders",
   };
-
-  const { selectedResources, allResourcesSelected, handleSelectionChange } =
-    useIndexResourceState(reviews);
-    console.log("selectedResources:", selectedResources);
-    console.log("allResourcesSelected:", allResourcesSelected);
-    console.log("handleSelectionChange:", handleSelectionChange);
 
   const rowMarkup = reviews?.map(
     (
@@ -228,6 +232,7 @@ const handlePreviousPage = () => {
           canCreateNewView
           onCreateNewView={[]}
           filters={[]}
+          primaryActionButton={<Badge progress="complete">Publish</Badge>}
           appliedFilters={[]}
           onClearAll={handleFiltersClearAll}
           mode={mode}
@@ -238,9 +243,9 @@ const handlePreviousPage = () => {
           resourceName={resourceName}
           itemCount={reviews ? reviews.length : 0}
           selectedItemsCount={
-            allResourcesSelected ? "All" : selectedResources.length
+            allResourcesSelected ? "All" : selectedTableRows.length
           }
-          onSelectionChange=''
+          onSelectionChange={handleSelectionChange}
           headings={[
             { title: "Review Id" },
             { title: "Review Title" },
