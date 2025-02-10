@@ -186,11 +186,11 @@ function reviewsTable() {
           event.preventDefault(); 
         }}
       >
-        <IndexTable.Cell>
+        {/* <IndexTable.Cell>
           <Text variant="bodyMd" fontWeight="bold" as="span">
             {id}
           </Text>
-        </IndexTable.Cell>
+        </IndexTable.Cell> */}
         <IndexTable.Cell>
           <Text variant="bodyMd" fontWeight="bold" as="span">
             {reviewTitle.slice(0, 8)}...
@@ -219,7 +219,7 @@ function reviewsTable() {
             <Badge progress="incomplete">Unpublish</Badge>
           )}
         </IndexTable.Cell>
-        <IndexTable.Cell>
+        {/* <IndexTable.Cell>
           <InlineStack gap="200" align="center">
             <Button tone="success">
               <Icon source={EditIcon} />
@@ -228,7 +228,7 @@ function reviewsTable() {
               <Icon source={DeleteIcon} />
             </Button>
           </InlineStack>
-        </IndexTable.Cell>
+        </IndexTable.Cell> */}
       </IndexTable.Row>
     )
   );
@@ -317,14 +317,14 @@ function reviewsTable() {
             },
           ]}
           headings={[
-            { title: "Review Id" },
+            // { title: "Review Id" },
             { title: "Review Title" },
             { title: "Date" },
             { title: "Product Id" },
             { title: "Customer Name" },
             { title: "Customer Email" },
             { title: "Status" },
-            { title: "Action", alignment: "center" },
+            // { title: "Action", alignment: "center" },
           ]}
           pagination={{
             hasNext: pageInfoData?.hasNextPage,
