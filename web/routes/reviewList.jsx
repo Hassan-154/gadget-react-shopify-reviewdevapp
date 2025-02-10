@@ -16,6 +16,7 @@ import {
   Frame,
   Spinner,
 } from "@shopify/polaris";
+import { useNavigate } from "react-router";
 import { useState, useCallback, useEffect } from "react";
 import { EditIcon, DeleteIcon } from "@shopify/polaris-icons";
 import { useFindMany } from "@gadgetinc/react";
@@ -27,15 +28,14 @@ function reviewsTable() {
   const [reviews, setReviews] = useState([]);
   const [pageInfoData, setPageInfoData] = useState(null);
   const pageSize = 5;
-
   const [currentPage, setCurrentPage] = useState(1);
-
   const [sortSelected, setSortSelected] = useState(["customerName asc"]);
   const [fieldDB, sortOrder] = sortSelected[0].split(" ");
   const [searchTableData, setSearchTableData] = useState("");
   const [tableSpinnerToDataLoad, setTableSpinnerToDataLoad] = useState(false);
   const { selectedResources, allResourcesSelected, handleSelectionChange } =
     useIndexResourceState(reviews);
+    const navigate = useNavigate();
   const [
     {
       data: reviewListData,
@@ -179,6 +179,12 @@ function reviewsTable() {
         key={id}
         selected={selectedResources.includes(id)}
         position={index}
+        onClick={(event) => {
+          navigate(`/review/${id}`);
+          // navigate(`/review/${id}`, { replace: true });
+          event.stopPropagation();
+          event.preventDefault(); 
+        }}
       >
         <IndexTable.Cell>
           <Text variant="bodyMd" fontWeight="bold" as="span">
@@ -279,6 +285,11 @@ function reviewsTable() {
           setMode={setMode}
         />
         <IndexTable
+          emptyState={
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: '100%' }}>
+              <Spinner accessibilityLabel="Spinner example" size="large" />
+            </div>
+          }
           condensed={useBreakpoints().smDown}
           resourceName={resourceName}
           itemCount={reviews ? reviews.length : 0}
