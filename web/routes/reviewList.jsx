@@ -12,90 +12,123 @@ import {
   Button,
   InlineStack,
   Icon,
+  Modal,
+  Frame,
+  Spinner,
 } from "@shopify/polaris";
-import { useState, useCallback,useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { EditIcon, DeleteIcon } from "@shopify/polaris-icons";
 import { useFindMany } from "@gadgetinc/react";
 import { api } from "../api";
 
 function reviewsTable() {
-
   const [afterCursor, setAfterCursor] = useState(null);
   const [beforeCursor, setBeforeCursor] = useState(null);
   const [reviews, setReviews] = useState([]);
-  const [pageInfoData, setPageInfoData] = useState(null)
+  const [pageInfoData, setPageInfoData] = useState(null);
   const pageSize = 5;
-  
+
   const [currentPage, setCurrentPage] = useState(1);
 
   const [sortSelected, setSortSelected] = useState(["customerName asc"]);
   const [fieldDB, sortOrder] = sortSelected[0].split(" ");
-  const [searchTableData, setSearchTableData] = useState('');
-  const [selectedTableRows, setSelectedTableRows] = useState([]);
+  const [searchTableData, setSearchTableData] = useState("");
+  const [tableSpinnerToDataLoad, setTableSpinnerToDataLoad] = useState(false);
   const { selectedResources, allResourcesSelected, handleSelectionChange } =
-  useIndexResourceState(reviews);
-  const [{ data: reviewListData, fetching: findFetching, error: findError, pageInfo }, _refetch] = useFindMany(api.reviewList, {
+    useIndexResourceState(reviews);
+  const [
+    {
+      data: reviewListData,
+      fetching: findFetching,
+      error: findError,
+      pageInfo,
+    },
+    _refetch,
+  ] = useFindMany(api.reviewList, {
     live: true,
     ...(searchTableData ? { search: searchTableData } : {}),
     first: pageSize,
     ...(afterCursor ? { after: afterCursor } : {}),
     ...(beforeCursor ? { before: beforeCursor, last: pageSize } : {}),
-    sort: {[fieldDB]: sortOrder === 'asc' ? "Ascending" : "Descending"},
-});
-
-const deleteReviews = async (idsToDelete) => {
-  try {
-    for (const id of idsToDelete) {
-      await api.reviewList.delete(id);
+    sort: { [fieldDB]: sortOrder === "asc" ? "Ascending" : "Descending" },
+  });
+  
+  const updateReviewStatus = async (ids, value) => {
+    try {
+      setTableSpinnerToDataLoad(true);
+      for (const id of ids) {
+        await api.reviewList.update(id, { publishStatus: value });
+      }
+      _refetch();
+      handleSelectionChange("all", false);
+    } catch (error) {
     }
-    console.log("Reviews deleted successfully:", idsToDelete);
-    handleSelectionChange('all', false)
-    setSelectedTableRows([])
-    _refetch();
-  } catch (error) {
-    console.error("Error deleting reviews:", error);
-  }
-};
+    finally {
+      setTableSpinnerToDataLoad(false);
+    }
+  };
+
+  const deleteReviews = async (idsToDelete) => {
+    try {
+      setTableSpinnerToDataLoad(true);
+      for (const id of idsToDelete) {
+        await api.reviewList.delete(id);
+      }
+      _refetch();
+      handleSelectionChange("all", false);
+    } catch (error) {
+    } finally {
+      setTableSpinnerToDataLoad(false);
+    }
+  };
 
   useEffect(() => {
     if (reviewListData) {
-      console.log("New data received:", reviewListData);
       setReviews(reviewListData);
     }
-    const filteredSelectedResources = selectedResources.filter(id => reviews.some(review => review.id === id));
-    setSelectedTableRows(filteredSelectedResources);
-    console.log("select table rows:", selectedTableRows);
-  }, [reviewListData, afterCursor, beforeCursor, selectedResources]);
+  }, [reviewListData, afterCursor, beforeCursor]);
 
-
-  // Also add a console log for fetching state
   useEffect(() => {
     if (reviewListData?.pagination) {
-        const newReviews = reviewListData.pagination.edges.map((edge) => edge.node);
-        setReviews(newReviews);
-        setPageInfoData(reviewListData.pagination.pageInfo);
+      const newReviews = reviewListData.pagination.edges.map(
+        (edge) => edge.node
+      );
+      setReviews(newReviews);
+      setPageInfoData(reviewListData.pagination.pageInfo);
     }
-}, [reviewListData]);
-  
-const handleNextPage = () => {
-  if (pageInfoData?.hasNextPage) {
-    setAfterCursor(pageInfoData.endCursor);
-    setBeforeCursor(null);
-    setCurrentPage((prev) => prev + 1);
-}
-};
+  }, [reviewListData]);
 
-const handlePreviousPage = () => {
-  if (pageInfoData?.hasPreviousPage) {
-    setBeforeCursor(pageInfoData.startCursor);
-    setAfterCursor(null);
-    setCurrentPage((prev) => Math.max(prev - 1, 1));
-}
-};
+  const handleNextPage = () => {
+    if (pageInfoData?.hasNextPage) {
+      setAfterCursor(pageInfoData.endCursor);
+      setBeforeCursor(null);
+      setCurrentPage((prev) => prev + 1);
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (pageInfoData?.hasPreviousPage) {
+      setBeforeCursor(pageInfoData.startCursor);
+      setAfterCursor(null);
+      setCurrentPage((prev) => Math.max(prev - 1, 1));
+    }
+  };
+
+  const [active, setActive] = useState(false);
+
+  const toggleModal = useCallback(() => setActive((active) => !active), []);
 
   const sortOptions = [
-    { label: "Customer Name", value: "customerName asc", directionLabel: "A-Z" },
-    { label: "Customer Name", value: "customerName desc", directionLabel: "Z-A" },
+    {
+      label: "Customer Name",
+      value: "customerName asc",
+      directionLabel: "A-Z",
+    },
+    {
+      label: "Customer Name",
+      value: "customerName desc",
+      directionLabel: "Z-A",
+    },
     { label: "Date", value: "createdAt asc", directionLabel: "Ascending" },
     { label: "Date", value: "createdAt desc", directionLabel: "Descending" },
   ];
@@ -106,27 +139,23 @@ const handlePreviousPage = () => {
   const handleQueryValueChange = useCallback((value) => {
     setQueryValue(value);
     setSearchTableData(value);
-    // Reset pagination state when search changes
     setAfterCursor(null);
     setBeforeCursor(null);
     setCurrentPage(1);
-}, []);
-  
+  }, []);
+
   const handleQueryValueRemove = useCallback(() => {
     setQueryValue("");
     setSearchTableData("");
-    // Reset pagination when search is cleared
     setAfterCursor(null);
     setBeforeCursor(null);
     setCurrentPage(1);
-}, []);
+  }, []);
 
   const handleFiltersClearAll = useCallback(() => {
     handleQueryValueRemove();
-  }, [
-    handleQueryValueRemove,
-  ]); 
-      
+  }, [handleQueryValueRemove]);
+
   const resourceName = {
     singular: "order",
     plural: "orders",
@@ -134,7 +163,15 @@ const handlePreviousPage = () => {
 
   const rowMarkup = reviews?.map(
     (
-      { id, reviewTitle, productId, createdAt, customerName, customerEmail, publishStatus, fulfillmentStatus },
+      {
+        id,
+        reviewTitle,
+        productId,
+        createdAt,
+        customerName,
+        customerEmail,
+        publishStatus,
+      },
       index
     ) => (
       <IndexTable.Row
@@ -145,38 +182,45 @@ const handlePreviousPage = () => {
       >
         <IndexTable.Cell>
           <Text variant="bodyMd" fontWeight="bold" as="span">
-          {id}
+            {id}
           </Text>
         </IndexTable.Cell>
         <IndexTable.Cell>
           <Text variant="bodyMd" fontWeight="bold" as="span">
-          {reviewTitle.slice(0, 8)}...
+            {reviewTitle.slice(0, 8)}...
           </Text>
         </IndexTable.Cell>
-        <IndexTable.Cell>{new Date(createdAt).toLocaleDateString("en-US", {
-         year: "numeric",
-         month: "long",
-         day: "numeric"
-         })}
-         </IndexTable.Cell>
-          <IndexTable.Cell>
+        <IndexTable.Cell>
+          {new Date(createdAt).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })}
+        </IndexTable.Cell>
+        <IndexTable.Cell>
           <Text variant="bodyMd" fontWeight="bold" as="span">
-          {productId}
+            {productId}
           </Text>
         </IndexTable.Cell>
-        <IndexTable.Cell><IndexTable.Cell>{customerName}</IndexTable.Cell></IndexTable.Cell>
+        <IndexTable.Cell>
+          <IndexTable.Cell>{customerName}</IndexTable.Cell>
+        </IndexTable.Cell>
         <IndexTable.Cell>{customerEmail.slice(0, 16)}...</IndexTable.Cell>
         <IndexTable.Cell>
-          { publishStatus ? <Badge progress="complete">Publish</Badge> : <Badge progress="incomplete">Unpublish</Badge>}
-          </IndexTable.Cell>
+          {publishStatus ? (
+            <Badge progress="complete">Publish</Badge>
+          ) : (
+            <Badge progress="incomplete">Unpublish</Badge>
+          )}
+        </IndexTable.Cell>
         <IndexTable.Cell>
-        <InlineStack gap="200" align="center">
-          <Button tone="success">
-            <Icon source={EditIcon} />
-          </Button>
-          <Button tone="critical">  
-            <Icon source={DeleteIcon} />
-          </Button>
+          <InlineStack gap="200" align="center">
+            <Button tone="success">
+              <Icon source={EditIcon} />
+            </Button>
+            <Button tone="critical">
+              <Icon source={DeleteIcon} />
+            </Button>
           </InlineStack>
         </IndexTable.Cell>
       </IndexTable.Row>
@@ -185,37 +229,33 @@ const handlePreviousPage = () => {
 
   return (
     <Page
-      backAction={{content: 'Products', url: '#'}}
+      backAction={{ content: "Products", url: "#" }}
       title="Review List"
       compactTitle
-      primaryAction={{content: 'Create New Customization', disabled: false, variant: "primary"}}
-      secondaryActions={[
-        {
-          disabled: selectedResources.length === 0,
-          content: 'Delete All Selected Records',
-          onAction: () => deleteReviews(selectedResources),
-        },
-      ]}
-      actionGroups={[
-        {
-          title: 'Change Publish Status',
-          disabled: selectedResources.length === 0,
-          actions: [
-            {
-              content: 'Publish',
-              accessibilityLabel: 'Individual action label',
-              onAction: () => alert('Share on Facebook action'),
-            },
-            {
-              content: 'Unpublish',
-              accessibilityLabel: 'Individual action label',
-              onAction: () => alert('Share on Facebook action'),
-            },
-          ],
-        },
-      ]}
+      primaryAction={{
+        content: "Create new review",
+        disabled: false,
+        variant: "primary",
+      }}
     >
       {/* <pre>{JSON.stringify(reviewListData, null, 2)}</pre> */}
+      {tableSpinnerToDataLoad && (
+        <div>
+          <div
+            style={{
+              position: "fixed",
+              inset: "0px",
+              backgroundColor: "rgba(255,255,255,0.7)",
+              zIndex: "999",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Spinner size="large" />
+          </div>
+        </div>
+      )}
       <Card>
         <IndexFilters
           loading={findFetching}
@@ -243,9 +283,28 @@ const handlePreviousPage = () => {
           resourceName={resourceName}
           itemCount={reviews ? reviews.length : 0}
           selectedItemsCount={
-            allResourcesSelected ? "All" : selectedTableRows.length
+            allResourcesSelected ? "All" : selectedResources.length
           }
           onSelectionChange={handleSelectionChange}
+          promotedBulkActions={[
+            {
+              content: 'Delete selected reviews',
+              onAction: () => toggleModal(),
+            },
+            {
+              title: 'Publish Status',
+              actions: [
+                {
+                  content: 'Publish',
+                  onAction: () =>  updateReviewStatus(selectedResources, true),
+                },
+                {
+                  content: 'Unpublish',
+                  onAction: () => updateReviewStatus(selectedResources, false),
+                },
+              ],
+            },
+          ]}
           headings={[
             { title: "Review Id" },
             { title: "Review Title" },
@@ -260,12 +319,53 @@ const handlePreviousPage = () => {
             hasNext: pageInfoData?.hasNextPage,
             hasPrevious: pageInfoData?.hasPreviousPage,
             onNext: handleNextPage,
-            onPrevious: handlePreviousPage
+            onPrevious: handlePreviousPage,
           }}
         >
           {rowMarkup}
         </IndexTable>
       </Card>
+
+      <Frame>
+        <div style={{ height: "500px" }}>
+          <Modal
+            open={active}
+            onClose={toggleModal}
+            title="Delete customization"
+            primaryAction={{
+              destructive: true,
+              content: "Delete",
+              onAction: () => {
+                deleteReviews(selectedResources);
+                toggleModal();
+              },
+            }}
+            secondaryActions={[
+              {
+                content: "Cancel",
+                onAction: toggleModal,
+              },
+            ]}
+          >
+            <Modal.Section>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  textAlign: "center",
+                  padding: "20px 0",
+                }}
+              >
+                <Text variant="headingSm" as="h6">
+                  Are you sure you want to delete this Customization <br />
+                  "Review List Module"
+                </Text>
+              </div>
+            </Modal.Section>
+          </Modal>
+        </div>
+      </Frame>
     </Page>
   );
 }
